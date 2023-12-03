@@ -1,76 +1,50 @@
 
 
-#define REDS    3
-#define YELLOWS 3
-
-#define PIN_LED_RED_1     A0
-#define PIN_LED_RED_2     A1
-#define PIN_LED_RED_3     A2
-#define PIN_LED_YELLOW_1  A4
-#define PIN_LED_YELLOW_2  A5
-#define PIN_LED_YELLOW_3  2
+#define SETS     2 // Number of LED sets (rows)
+#define SET_SIZE 4 // Max number of LEDs per set
 
 long deylayed;
 
-int redLeds[REDS] =       {PIN_LED_RED_1, PIN_LED_RED_2, PIN_LED_RED_3};
-int yellowLeds[YELLOWS] = {PIN_LED_YELLOW_1, PIN_LED_YELLOW_2, PIN_LED_YELLOW_3};
+// Exterior array is a list of rows of LED pins, each interior array is a list of LED pins that will light up in a row
+const long leds[SETS][SET_SIZE] = {{2,3,4,5},{A0,A1,A2}};
 
-bool redStateChange = true;
-bool yellowStateChange = true;
-long redStateChangeAt[REDS] =        {0, 0, 0};
-long yellowStateChangeAt[YELLOWS] =  {0, 0, 0};
+// Number of LEDs per set, this way sets don't have to be equally long; do not exceed SET_SIZE!
+const int setSize[SETS] = {4,3};
+
+// Storage for each set, noting if we're switching LEDs on or off
+bool stateChanges[SETS] = {false, false};
+
+// Storage for planning at what time we're going to turn what LED on or off
+long stateChangesAt[SETS][SET_SIZE] = {{0, 0, 0, 0}, {0, 0, 0}};
 
 void setup() {
-  Serial.begin(9600);
-  
-  pinMode(PIN_LED_RED_1, OUTPUT);
-  pinMode(PIN_LED_RED_2, OUTPUT);
-  pinMode(PIN_LED_RED_3, OUTPUT);
-  pinMode(PIN_LED_YELLOW_1, OUTPUT);
-  pinMode(PIN_LED_YELLOW_2, OUTPUT);
-  pinMode(PIN_LED_YELLOW_3, OUTPUT);
+  for(int s=0; s < SETS; s++) {
+    for(int i=0; i < setSize[s]; i++) {
+      pinMode(leds[s][i], OUTPUT);
+    }
+  }
 }
 
 void loop() {
-
-  for(int i=0; i < REDS; i++) {
-    if(millis() >= redStateChangeAt[i]) {
-      digitalWrite(redLeds[i], redStateChange);
-
-      if(i >= REDS - 1) {
-        redStateChange = !redStateChange;
-        setRedStateChanges();
+  for(int s=0; s < SETS; s++) {
+    for(int i=0; i < setSize[s]; i++) {
+      if(millis() >= stateChangesAt[s][i]) {
+        digitalWrite(leds[s][i], stateChanges[s]);
+  
+        if(i >= setSize[s] - 1) {
+          stateChanges[s] = !stateChanges[s];
+          setStateChanges(s);
+        }
       }
     }
   }
-
-  for(int i=0; i < YELLOWS; i++) {
-    if(millis() >= yellowStateChangeAt[i]) {
-      digitalWrite(yellowLeds[i], yellowStateChange);
-
-      if(i >= YELLOWS - 1) {
-        yellowStateChange = !yellowStateChange;
-        setYellowStateChanges();
-      }
-    }
-  }
-
 }
 
-void setRedStateChanges() {
+void setStateChanges(int s) {
   deylayed = millis();
   
-  for(int i=0; i < REDS; i++) {
-    deylayed += 30 + random(110);
-    redStateChangeAt[i] = deylayed;
-  }
-}
-
-void setYellowStateChanges() {
-  deylayed = millis();
-  
-  for(int i=0; i < YELLOWS; i++) {
-    deylayed += 20 + random(90);
-    yellowStateChangeAt[i] = deylayed;
+  for(int i=0; i < setSize[s]; i++) {
+    deylayed += 30 + random(100);
+    stateChangesAt[s][i] = deylayed;
   }
 }
